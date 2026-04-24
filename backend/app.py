@@ -45,16 +45,6 @@ def sanitize_filename(filename):
     import re
     return re.sub(r'[^a-zA-Z0-9._-\u4e00-\u9fa5]', '_', filename)
 
-def check_file_type(file):
-    # 检查文件类型（简单实现，实际项目中可使用更复杂的方法）
-    import magic
-    try:
-        mime = magic.from_buffer(file.read(2048), mime=True)
-        file.seek(0)  # 重置文件指针
-        return mime
-    except:
-        return None
-
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if 'files' not in request.files:
@@ -206,11 +196,31 @@ def convert_file():
                         pdf.set_auto_page_break(auto=True, margin=25)
                         pdf.add_page()
                         
+                        # 尝试加载中文字体（Windows/Linux兼容）
                         font_path = r'C:\Windows\Fonts\simhei.ttf'
-                        font_available = os.path.exists(font_path)
+                        font_available = False
+                        if os.path.exists(font_path):
+                            font_available = True
+                        else:
+                            # Linux上尝试一些常见的中文字体路径
+                            linux_font_paths = [
+                                '/usr/share/fonts/truetype/noto/NotoSansSC-Regular.ttf',
+                                '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+                                '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+                                '/usr/share/fonts/opentype/noto/NotoSansSC-Regular.otf'
+                            ]
+                            for path in linux_font_paths:
+                                if os.path.exists(path):
+                                    font_path = path
+                                    font_available = True
+                                    break
+                        
                         if font_available:
-                            pdf.add_font('SimHei', '', font_path)
-                            pdf.add_font('SimHei', 'B', font_path)
+                            try:
+                                pdf.add_font('SimHei', '', font_path)
+                                pdf.add_font('SimHei', 'B', font_path)
+                            except Exception:
+                                font_available = False
                         
                         font_name = 'SimHei' if font_available else 'Helvetica'
                         
