@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: document-converter
+    runtime: python
+    buildCommand: bash build.sh
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --chdir backend
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.13.0"
+    plan: free
